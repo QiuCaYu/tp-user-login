@@ -20,10 +20,7 @@ class LoginService
     
     public $app;
     
-    public $filter = [
-        'password',
-        'salt',
-    ];
+    public $filter = [];
     
     public static $userList = [];
     
@@ -57,6 +54,8 @@ class LoginService
      */
     public function app(string $name = 'default'){
         $this->app = $this->getConfig($name);
+        $this->filter = $this->app['filter_field'];
+        return $this;
     }
     
     /**
@@ -69,6 +68,19 @@ class LoginService
         if (self::$model === null) {
             self::$model = new User();
         }
+        // 没有调用，则取默认
+        if(!$this->app){
+            $this->app();
+        }
+        if(!isset($this->app['table']) || !isset($this->app['response_code'])){
+            $tips = '请检查文件配置';
+            $errorConfig = [
+                'code' => '410',
+                'system_error_message' => $tips,
+                'message' => $tips,
+            ];
+            throw new ValidateLoginException($errorConfig);
+        }
         self::$model->setTable($this->app['table']);
         return self::$model;
     }
@@ -77,16 +89,16 @@ class LoginService
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function validator($username, $password)
+    public function validator(string $username,string $password)
     {
         $userInfo = $this->model()->checkAccount($username);
         if ($userInfo === false) {
-            throw new ValidateLoginException('获取用户信息失败');
+            throw new ValidateLoginException($this->app['response_code']['420']);
         }
         $this->user = $userInfo;
         $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
         if ($userPasswordStatus === false) {
-            throw new ValidateLoginException('校验账号密码有误');
+            throw new ValidateLoginException($this->app['response_code']['421']);
         }
         return true;
     }
@@ -96,11 +108,22 @@ class LoginService
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function getUser()
+    public function user()
     {
         if($this->user === null){
-            throw new ValidateLoginException('获取用户信息失败，请检查验证流程');
+            $errorConfig = [
+                'code' => '430',
+                'system_error_message' => '流程错误，需要先进行检验，再获取用户信息',
+                'message' => '系统繁忙',
+            ];
+            throw new ValidateLoginException($errorConfig);
         }
-        return $this->user->except($this->filter);
+        // 过滤字段
+        foreach ($this->filter as $value) {
+            if(isset($this->user[$value])){
+                unset($this->user[$value]);
+            }
+        }
+        return $this->user;
     }
 }

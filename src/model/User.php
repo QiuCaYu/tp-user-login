@@ -28,7 +28,7 @@ class User extends \think\Model
      */
     public function checkAccount(string $username){
         $data = $this->where('account',$username)->find();
-        if($data->isEmpty()){
+        if(!$data){
             return false;
         }
         // 查询后赋值给静态变量
@@ -47,10 +47,11 @@ class User extends \think\Model
             return false;
         }
         $userInfo = self::$userInfo[$username];
-        $realPassword = md5(md5($password.$userInfo['salt']));
-        if($realPassword === $userInfo['password']){
-            return true;
+        $realPassword = md5(md5($password.$userInfo->salt));
+        if($realPassword !== $userInfo->password){
+            return false;
         }
+        return true;
     }
     
 }

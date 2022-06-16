@@ -5,12 +5,20 @@ namespace cayu\tpuserlogin;
 use cayu\tpuserlogin\concern\LoginService;
 
 /**
- * LoginService.php
+ * Login.php
  * @author qjy 2022/6/16
  * @update qjy 2022/6/16
+ * @mixin LoginService
  */
 class Login
 {
+    /**
+     * @param $method
+     * @param $args
+     * @return mixed
+     * @author qjy 2022/6/16
+     * @update qjy 2022/6/16
+     */
     public function __call($method, $args)
     {
         return call_user_func_array([LoginService::instance(), $method], $args);
