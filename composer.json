@@ -1,0 +1,32 @@
+{
+    "name": "cayu/tp-user-login",
+    "description": "tp6用户统一检验登录类\n\t",
+    "type": "library",
+    "require": {
+        "php": ">=7.2",
+        "topthink/framework": "^6.0.0"
+    },
+    "license": "Apache-2.0",
+    "autoload": {
+        "psr-4": {
+            "cayu\\tpuserlogin\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "cayu",
+            "email": "qiujiayu@mhace.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "extra": {
+        "think": {
+            "services": [
+
+            ],
+            "config": {
+                "tpuserlogin": "src/config.php"
+            }
+        }
+    }
+}
