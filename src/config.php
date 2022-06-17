@@ -10,6 +10,24 @@
 // +----------------------------------------------------------------------
 
 return [
+    // 请勿修改响应码key，可修改 code、message字段
+    'response_code' => [
+        '400' => [
+            'code' => '400',
+            'system_error_message' => '参数校验错误',
+            'message' => '参数校验错误',
+        ],
+        '420' => [
+            'code' => '420',
+            'system_error_message' => '获取用户信息失败',
+            'message' => '账号或密码有误',
+        ],
+        '421' => [
+            'code' => '421',
+            'system_error_message' => '校验密码错误',
+            'message' => '账号或密码有误',
+        ]
+    ],
     'meta' => [
         // 默认读取 default 内容,新增配置可复制 default内容,修改为其他名称即可使用
         'default' => [
@@ -20,19 +38,12 @@ return [
                 'password',
                 'salt',
             ],
-            // 请勿修改响应码key，可修改 code、message字段
-            'response_code' => [
-                '420' => [
-                    'code' => '420',
-                    'system_error_message' => '获取用户信息失败',
-                    'message' => '账号或密码有误',
-                ],
-                '421' => [
-                    'code' => '421',
-                    'system_error_message' => '校验密码有误',
-                    'message' => '账号或密码有误',
-                ]
-            ],
+            'cache'=> [
+                // 缓存时间
+                'times' => '86400',
+                // 缓存前缀定义
+                'prefix' => 'default_user_login:'
+            ]
         ]
         // ...
     ]

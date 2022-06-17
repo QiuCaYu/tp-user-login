@@ -5,14 +5,14 @@ namespace cayu\tpuserlogin\exception;
 /**
  * 数据验证异常
  */
-class ValidateLoginException extends \RuntimeException
+class ValidateErrorException extends \RuntimeException
 {
     protected $error;
     
     public function __construct($error)
     {
         $this->error   = $error;
-        $this->message = is_array($error) ? implode(PHP_EOL, $error) : $error;
+        $this->message = is_array($error) ? $error['system_error_message'] : $error;
     }
     
     /**

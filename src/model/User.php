@@ -47,7 +47,9 @@ class User extends \think\Model
             return false;
         }
         $userInfo = self::$userInfo[$username];
-        $realPassword = md5(md5($password.$userInfo->salt));
+        $secret = (string)$password.(string)$userInfo->salt;
+        $realPassword = md5(md5($secret));
+        unset($secret);
         if($realPassword !== $userInfo->password){
             return false;
         }

@@ -2,7 +2,7 @@
 declare (strict_types = 1);
 namespace cayu\tpuserlogin\concern;
 
-use cayu\tpuserlogin\exception\ValidateLoginException;
+use cayu\tpuserlogin\exception\ValidateErrorException;
 use cayu\tpuserlogin\model\User;
 
 /**
@@ -21,6 +21,8 @@ class LoginService
     public $app;
     
     public $filter = [];
+    
+    public $token;
     
     public static $userList = [];
     
@@ -48,6 +50,20 @@ class LoginService
     }
     
     /**
+     * Get the tplogin configuration.
+     *
+     * @param string $code
+     * @return array
+     */
+    protected function getResponseConfig($code)
+    {
+        if(isset($this->app['response_code']) && isset($this->app['response_code'][$code])){
+            return $this->app['response_code'][$code];
+        }
+        return config("tplogin.response_code.{$code}");
+    }
+    
+    /**
      * @param $name
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
@@ -72,14 +88,14 @@ class LoginService
         if(!$this->app){
             $this->app();
         }
-        if(!isset($this->app['table']) || !isset($this->app['response_code'])){
+        if(!isset($this->app['table'])){
             $tips = '请检查文件配置';
             $errorConfig = [
                 'code' => '410',
                 'system_error_message' => $tips,
                 'message' => $tips,
             ];
-            throw new ValidateLoginException($errorConfig);
+            throw new ValidateErrorException($errorConfig);
         }
         self::$model->setTable($this->app['table']);
         return self::$model;
@@ -89,18 +105,42 @@ class LoginService
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function validator(string $username,string $password)
+    public function inspectUser(string $username,string $password)
     {
+        if(empty($username) || empty($password)){
+            throw new ValidateErrorException($this->getResponseConfig('400'));
+        }
         $userInfo = $this->model()->checkAccount($username);
         if ($userInfo === false) {
-            throw new ValidateLoginException($this->app['response_code']['420']);
+            throw new ValidateErrorException($this->getResponseConfig('420'));
         }
         $this->user = $userInfo;
         $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
         if ($userPasswordStatus === false) {
-            throw new ValidateLoginException($this->app['response_code']['421']);
+            throw new ValidateErrorException($this->getResponseConfig('421'));
         }
-        return true;
+        $this->cache();
+        return $this;
+    }
+    
+    /**
+     * @return mixed|object|\think\App
+     * @author qjy 2022/6/16
+     * @update qjy 2022/6/16
+     */
+    public function cache(){
+        $cacheData = $this->app['cache']??null;
+        if(!isset($cacheData)){
+            $tips = '请检查文件缓存配置';
+            $errorConfig = [
+                'code' => '411',
+                'system_error_message' => $tips,
+                'message' => $tips,
+            ];
+            throw new ValidateErrorException($errorConfig);
+        }
+        $this->token = md5($this->user->username.microtime());
+        return cache($cacheData['prefix'].$this->token,$this->user(),$cacheData['times']);
     }
     
     /**
@@ -108,15 +148,30 @@ class LoginService
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function user()
+    public function token(){
+        return $this->token;
+    }
+    
+    /**
+     * @return mixed
+     * @author qjy 2022/6/16
+     * @update qjy 2022/6/16
+     */
+    public function user($token = null)
     {
+        if($token !== null){
+            $cacheData = $this->app['cache'];
+            // 如果key不为空，则获取值
+            $this->token = $token;
+            $this->user = cache($cacheData['prefix'].$token);
+        }
         if($this->user === null){
             $errorConfig = [
                 'code' => '430',
-                'system_error_message' => '流程错误，需要先进行检验，再获取用户信息',
+                'system_error_message' => '用户信息不存在',
                 'message' => '系统繁忙',
             ];
-            throw new ValidateLoginException($errorConfig);
+            throw new ValidateErrorException($errorConfig);
         }
         // 过滤字段
         foreach ($this->filter as $value) {
