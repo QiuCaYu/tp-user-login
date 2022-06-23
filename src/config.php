@@ -31,7 +31,6 @@ return [
     'meta' => [
         // 默认读取 default 内容,新增配置可复制 default内容,修改为其他名称即可使用
         'default' => [
-            // 配置表
             'table' => '',
             // 过滤表字段
             'filter_field' => [
@@ -40,9 +39,11 @@ return [
             ],
             'cache'=> [
                 // 缓存时间
-                'times' => '86400',
-                // 缓存前缀定义
-                'prefix' => 'default_user_login:'
+                'times' => 86400,
+                // token缓存前缀定义
+                'token_prefix' => 'default_user_login:',
+                // 用户信息缓存前缀定义
+                'user_prefix' => 'default_user_login:user:',
             ]
         ]
         // ...

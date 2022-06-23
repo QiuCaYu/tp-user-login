@@ -3,6 +3,7 @@ declare (strict_types = 1);
 namespace cayu\tpuserlogin\concern;
 
 use cayu\tpuserlogin\exception\ValidateErrorException;
+use cayu\tpuserlogin\lib\Config;
 use cayu\tpuserlogin\model\User;
 
 /**
@@ -10,95 +11,27 @@ use cayu\tpuserlogin\model\User;
  * @author qjy 2022/6/16
  * @update qjy 2022/6/16
  */
-class LoginService
+class LoginService extends Config
 {
-    protected static $_init = null;
-    
-    protected static $model = null;
-    
-    public $user = null;
-    
-    public $app;
-    
-    public $filter = [];
-    
-    public $token;
-    
-    public static $userList = [];
-    
     /**
-     * @return static
-     * @author qjy 2022/5/28
-     * @update qjy 2022/5/28
+     * 账号检查者
+     * @param string $username
+     * @param string $password
+     * @author qjy 2022/6/23
      */
-    public static function instance(){
-        if(!self::$_init){
-            self::$_init = new static();
+    public function checker(string $username,string $password){
+        if(empty($username) || empty($password)){
+            throw new ValidateErrorException($this->getResponseConfig('400'));
         }
-        return self::$_init;
-    }
-    
-    /**
-     * Get the tplogin configuration.
-     *
-     * @param string $name
-     * @return array
-     */
-    protected function getConfig($name)
-    {
-        return config("tplogin.meta.{$name}",'tplogin.meta.default');
-    }
-    
-    /**
-     * Get the tplogin configuration.
-     *
-     * @param string $code
-     * @return array
-     */
-    protected function getResponseConfig($code)
-    {
-        if(isset($this->app['response_code']) && isset($this->app['response_code'][$code])){
-            return $this->app['response_code'][$code];
+        $userInfo = $this->model()->checkAccount($username);
+        if ($userInfo === false) {
+            throw new ValidateErrorException($this->getResponseConfig('420'));
         }
-        return config("tplogin.response_code.{$code}");
-    }
-    
-    /**
-     * @param $name
-     * @author qjy 2022/6/16
-     * @update qjy 2022/6/16
-     */
-    public function app(string $name = 'default'){
-        $this->app = $this->getConfig($name);
-        $this->filter = $this->app['filter_field'];
-        return $this;
-    }
-    
-    /**
-     * @return User
-     * @author qjy 2022/6/16
-     * @update qjy 2022/6/16
-     */
-    public function model():User
-    {
-        if (self::$model === null) {
-            self::$model = new User();
+        $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
+        if ($userPasswordStatus === false) {
+            throw new ValidateErrorException($this->getResponseConfig('421'));
         }
-        // 没有调用，则取默认
-        if(!$this->app){
-            $this->app();
-        }
-        if(!isset($this->app['table'])){
-            $tips = '请检查文件配置';
-            $errorConfig = [
-                'code' => '410',
-                'system_error_message' => $tips,
-                'message' => $tips,
-            ];
-            throw new ValidateErrorException($errorConfig);
-        }
-        self::$model->setTable($this->app['table']);
-        return self::$model;
+        return $userInfo;
     }
     
     /**
@@ -107,20 +40,27 @@ class LoginService
      */
     public function inspectUser(string $username,string $password)
     {
-        if(empty($username) || empty($password)){
-            throw new ValidateErrorException($this->getResponseConfig('400'));
-        }
-        $userInfo = $this->model()->checkAccount($username);
-        if ($userInfo === false) {
-            throw new ValidateErrorException($this->getResponseConfig('420'));
-        }
-        $this->user = $userInfo;
-        $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
-        if ($userPasswordStatus === false) {
-            throw new ValidateErrorException($this->getResponseConfig('421'));
-        }
+        $this->user = $this->checker($username,$password);
         $this->cache();
         return $this;
+    }
+    
+    /**
+     * 更新用户密码
+     * @author qjy 2022/6/23
+     */
+    public function editPassword(string $username,string $password,string $newPassword){
+        $this->user = $this->checker($username,$password);
+        // 生成新密码
+        $salt = (string)rand(0000,9999);
+        $newMdPasswrord = md5(md5($password.$salt));
+        // 密码更新
+        $update = [
+            'salt' => $salt,
+            'password' => $newMdPasswrord,
+            'update_time' => date('Y-m-d H:i:s')
+        ];
+        return $this->model()->update($update,['id' => $this->user->id]);
     }
     
     /**
@@ -129,56 +69,44 @@ class LoginService
      * @update qjy 2022/6/16
      */
     public function cache(){
-        $cacheData = $this->app['cache']??null;
-        if(!isset($cacheData)){
-            $tips = '请检查文件缓存配置';
-            $errorConfig = [
-                'code' => '411',
-                'system_error_message' => $tips,
-                'message' => $tips,
-            ];
-            throw new ValidateErrorException($errorConfig);
+        $cacheData = $this->getCacheConfig();
+        // 先缓存用户信息
+        $userKey = $cacheData['user_prefix'].$this->user->username;
+        $userCacheStatus = cache($userKey,$this->user());
+        if($userCacheStatus !== true){
+            throw new ValidateErrorException($this->response['435']);
         }
+        // 生成token
+        $tokenExpiredTime = date('Y-m-d H:i:s',strtotime('+'.$cacheData['times'].'seconds'));
+        $this->tokenInfo = [
+            'key' =>$userKey,
+            'token_expired_time' => $tokenExpiredTime,
+        ];
         $this->token = md5($this->user->username.microtime());
-        return cache($cacheData['prefix'].$this->token,$this->user(),$cacheData['times']);
+        return cache($cacheData['token_prefix'].$this->token,$this->tokenInfo,$cacheData['times']);
     }
     
     /**
-     * @return mixed
-     * @author qjy 2022/6/16
-     * @update qjy 2022/6/16
+     * 删除token以及用户信息
+     * @param null $token
+     * @author qjy 2022/6/17
+     * @update qjy 2022/6/17
      */
-    public function token(){
+    public function destroy($token = null){
+        $this->user = null;
+        if($token !== null){
+            $this->token = $token;
+        }
+        $cacheData = $this->getCacheConfig();
+        $check = cache($cacheData['token_prefix'].$this->token,null);
+        if($check === true){
+            return true;
+        }
+        return false;
+    }
+    
+    public function tokenKey(){
         return $this->token;
     }
-    
-    /**
-     * @return mixed
-     * @author qjy 2022/6/16
-     * @update qjy 2022/6/16
-     */
-    public function user($token = null)
-    {
-        if($token !== null){
-            $cacheData = $this->app['cache'];
-            // 如果key不为空，则获取值
-            $this->token = $token;
-            $this->user = cache($cacheData['prefix'].$token);
-        }
-        if($this->user === null){
-            $errorConfig = [
-                'code' => '430',
-                'system_error_message' => '用户信息不存在',
-                'message' => '系统繁忙',
-            ];
-            throw new ValidateErrorException($errorConfig);
-        }
-        // 过滤字段
-        foreach ($this->filter as $value) {
-            if(isset($this->user[$value])){
-                unset($this->user[$value]);
-            }
-        }
-        return $this->user;
-    }
+
 }
