@@ -15,7 +15,7 @@ abstract class Config
 {
     protected static $_init = null;
     
-    protected static $model = null;
+    protected $modelClass = null;
     
     public $user = null;
     
@@ -96,18 +96,14 @@ abstract class Config
      */
     public function model():User
     {
-        if (self::$model === null) {
-            self::$model = new User();
-        }
-        // 没有调用，则取默认
-        if(!$this->app){
-            $this->app();
+        if($this->modelClass === null){
+            $this->modelClass = new User();
         }
         if(!isset($this->app['table'])){
             throw new ValidateErrorException($this->getResponseConfig('410'));
         }
-        self::$model->setTable($this->app['table']);
-        return self::$model;
+        $this->modelClass->setTable($this->app['table']);
+        return $this->modelClass;
     }
     
     /**

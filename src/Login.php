@@ -15,7 +15,7 @@ class Login
     /**
      * @param $method
      * @param $args
-     * @return mixed
+     * @return LoginService
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */

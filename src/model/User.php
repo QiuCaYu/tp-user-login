@@ -1,6 +1,8 @@
 <?php
 declare (strict_types = 1);
 namespace cayu\tpuserlogin\model;
+use cayu\tpuserlogin\Login;
+
 /**
  * User.php
  * @author qjy 2022/6/16
@@ -11,6 +13,14 @@ class User extends \think\Model
     protected $table = '';
     
     public static $userInfo = null;
+    
+    
+    public function __construct(array $data = [])
+    {
+        $this->table = Login::instance()->app['table'];
+        parent::__construct($data);
+        
+    }
     
     /**
      * @param $table

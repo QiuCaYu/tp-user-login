@@ -24,6 +24,7 @@ class LoginService extends Config
             throw new ValidateErrorException($this->getResponseConfig('400'));
         }
         $userInfo = $this->model()->checkAccount($username);
+
         if ($userInfo === false) {
             throw new ValidateErrorException($this->getResponseConfig('420'));
         }
@@ -47,7 +48,11 @@ class LoginService extends Config
     
     /**
      * 更新用户密码
-     * @author qjy 2022/6/23
+     * @param string $username
+     * @param string $password
+     * @param string $newPassword
+     * @return User
+     * @author qjy 2022/6/29
      */
     public function editPassword(string $username,string $password,string $newPassword){
         $this->user = $this->checker($username,$password);
@@ -60,7 +65,8 @@ class LoginService extends Config
             'password' => $newMdPasswrord,
             'update_time' => date('Y-m-d H:i:s')
         ];
-        return $this->model()->update($update,['id' => $this->user->id]);
+        $where = ['id' => $this->user->id];
+        return $this->model()::update($update,['id' => $where]);
     }
     
     /**
