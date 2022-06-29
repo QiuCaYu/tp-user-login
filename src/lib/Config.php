@@ -29,29 +29,6 @@ abstract class Config
     
     public static $userList = [];
     
-    public $response = [
-        '411' => [
-            'code' => '411',
-            'system_error_message' => '请检查文件缓存配置',
-            'message' => '请检查文件缓存配置',
-        ],
-        '410' => [
-            'code' => '410',
-            'system_error_message' => '请检查文件配置',
-            'message' => '请检查文件配置',
-        ],
-        '430' => [
-            'code' => '430',
-            'system_error_message' => '用户信息不存在',
-            'message' => '用户信息不存在',
-        ],
-        '435' => [
-            'code' => '435',
-            'system_error_message' => '缓存用户信息有误',
-            'message' => '缓存用户信息有误',
-        ]
-    ];
-    
     /**
      * @return static
      * @author qjy 2022/5/28
@@ -96,7 +73,7 @@ abstract class Config
     public function getCacheConfig(){
         $cacheData = $this->app['cache']??null;
         if(!isset($cacheData)){
-            throw new ValidateErrorException($this->response['411']);
+            throw new ValidateErrorException($this->getResponseConfig('411'));
         }
         return $cacheData;
     }
@@ -127,7 +104,7 @@ abstract class Config
             $this->app();
         }
         if(!isset($this->app['table'])){
-            throw new ValidateErrorException($this->response['410']);
+            throw new ValidateErrorException($this->getResponseConfig('410'));
         }
         self::$model->setTable($this->app['table']);
         return self::$model;
@@ -150,7 +127,7 @@ abstract class Config
             }
         }
         if($this->user === null){
-            throw new ValidateErrorException($this->response['430']);
+            throw new ValidateErrorException($this->getResponseConfig('430'));
         }
         // 过滤字段
         foreach ($this->filter as $value) {

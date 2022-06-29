@@ -74,7 +74,7 @@ class LoginService extends Config
         $userKey = $cacheData['user_prefix'].$this->user->username;
         $userCacheStatus = cache($userKey,$this->user());
         if($userCacheStatus !== true){
-            throw new ValidateErrorException($this->response['435']);
+            throw new ValidateErrorException($this->getResponseConfig('435'));
         }
         // 生成token
         $tokenExpiredTime = date('Y-m-d H:i:s',strtotime('+'.$cacheData['times'].'seconds'));

@@ -26,6 +26,26 @@ return [
             'code' => '421',
             'system_error_message' => '校验密码错误',
             'message' => '账号或密码有误',
+        ],
+        '411' => [
+            'code' => '411',
+            'system_error_message' => '请检查文件缓存配置',
+            'message' => '请检查文件缓存配置',
+        ],
+        '410' => [
+            'code' => '410',
+            'system_error_message' => '请检查文件配置',
+            'message' => '请检查文件配置',
+        ],
+        '430' => [
+            'code' => '430',
+            'system_error_message' => '用户信息不存在',
+            'message' => '用户信息不存在',
+        ],
+        '435' => [
+            'code' => '435',
+            'system_error_message' => '缓存用户信息有误',
+            'message' => '缓存用户信息有误',
         ]
     ],
     'meta' => [
