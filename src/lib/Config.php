@@ -21,6 +21,8 @@ abstract class Config
     
     public $app;
     
+    public $appId = '';
+    
     public $filter = [];
     
     public $token;

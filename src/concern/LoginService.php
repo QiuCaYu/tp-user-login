@@ -39,9 +39,11 @@ class LoginService extends Config
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function inspectUser(string $username,string $password)
+    public function inspectUser(string $username,string $password,string $appId = '')
     {
+        $this->appId = $appId;
         $this->user = $this->checker($username,$password);
+        $this->user['source_app_id'] = $this->appId;
         $this->cache();
         return $this;
     }
@@ -58,7 +60,7 @@ class LoginService extends Config
         $this->user = $this->checker($username,$password);
         // 生成新密码
         $salt = (string)rand(0000,9999);
-        $newMdPasswrord = md5(md5($password.$salt));
+        $newMdPasswrord = md5(md5($newPassword.$salt));
         // 密码更新
         $update = [
             'salt' => $salt,
@@ -76,7 +78,13 @@ class LoginService extends Config
      */
     public function cache(){
         $cacheData = $this->getCacheConfig();
-        // 先缓存用户信息
+        // 设置每个用户的存储token列表key
+        $tokenListKey = 'user_token_list:'.$this->user->username;
+        $tokenList = cache($tokenListKey);
+        if($tokenList === null){
+            $tokenList = [];
+        }
+        // 缓存用户信息
         $userKey = $cacheData['user_prefix'].$this->user->username;
         $userCacheStatus = cache($userKey,$this->user());
         if($userCacheStatus !== true){
@@ -88,8 +96,23 @@ class LoginService extends Config
             'key' =>$userKey,
             'token_expired_time' => $tokenExpiredTime,
         ];
+        // token
         $this->token = md5($this->user->username.microtime());
-        return cache($cacheData['token_prefix'].$this->token,$this->tokenInfo,$cacheData['times']);
+        // 获取token数据
+        $tokenStatus = cache($cacheData['token_prefix'].$this->token,$this->tokenInfo,$cacheData['times']);
+        // 新增token到用户的tokenList
+        $tokenList[] = $this->token;
+        if(count($tokenList) > 10){
+            foreach ($tokenList as $delKey => $delToken) {
+                if($delKey <= 9){
+                    cache($cacheData['token_prefix'].$delToken,null);
+                    unset($tokenList[$delKey]);
+                }
+            }
+            $tokenList = array_values($tokenList);
+        }
+        $tokenListStatus = cache($tokenListKey,$tokenList);
+        return $tokenStatus && $tokenListStatus;
     }
     
     /**
