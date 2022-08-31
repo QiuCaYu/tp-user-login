@@ -141,13 +141,18 @@ abstract class Config
      * @return mixed|object|\think\App
      * @author qjy 2022/6/23
      */
-    public function token($token = null){
+    public function token($token = null,$filter = ['source_app_id']){
         if($token !== null){
             $cacheData = $this->getCacheConfig();
-            return cache($cacheData['token_prefix'].$token);
-        }else{
-            return $this->tokenInfo;
+            $this->tokenInfo = cache($cacheData['token_prefix'].$token);
         }
-
+        if($filter){
+            foreach ($filter as $value) {
+                if(isset($this->tokenInfo[$value])){
+                    unset($this->tokenInfo[$value]);
+                }
+            }
+        }
+        return $this->tokenInfo;
     }
 }

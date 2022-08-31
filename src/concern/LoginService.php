@@ -43,7 +43,6 @@ class LoginService extends Config
     {
         $this->appId = $appId;
         $this->user = $this->checker($username,$password);
-        $this->user['source_app_id'] = $this->appId;
         $this->cache();
         return $this;
     }
@@ -95,6 +94,7 @@ class LoginService extends Config
         $this->tokenInfo = [
             'key' =>$userKey,
             'token_expired_time' => $tokenExpiredTime,
+            'source_app_id' => $this->appId
         ];
         // token
         $this->token = md5($this->user->username.microtime());
