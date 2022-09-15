@@ -51,6 +51,9 @@ return [
     'meta' => [
         // 默认读取 default 内容,新增配置可复制 default内容,修改为其他名称即可使用
         'default' => [
+            // 连接的数据库
+            'connection' => 'shopSys',
+            // 数据表
             'table' => '',
             // 过滤表字段
             'filter_field' => [

@@ -10,16 +10,15 @@ use cayu\tpuserlogin\Login;
  */
 class User extends \think\Model
 {
-    protected $table = '';
     
     public static $userInfo = null;
     
     
     public function __construct(array $data = [])
     {
-        $this->table = Login::instance()->app['table'];
+        $this->setConnection(Login::instance()->app['connection']);
+        $this->setTable(Login::instance()->app['table']);
         parent::__construct($data);
-        
     }
     
     /**

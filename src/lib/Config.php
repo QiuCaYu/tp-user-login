@@ -98,13 +98,12 @@ abstract class Config
      */
     public function model():User
     {
+        if(empty($this->app['table']) || empty($this->app['connection'])){
+            throw new ValidateErrorException($this->getResponseConfig('410'));
+        }
         if($this->modelClass === null){
             $this->modelClass = new User();
         }
-        if(!isset($this->app['table'])){
-            throw new ValidateErrorException($this->getResponseConfig('410'));
-        }
-        $this->modelClass->setTable($this->app['table']);
         return $this->modelClass;
     }
     
