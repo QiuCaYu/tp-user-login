@@ -1,8 +1,8 @@
 <?php
-declare (strict_types = 1);
+declare (strict_types=1);
+
 namespace cayu\tpuserlogin\lib;
 
-use cayu\tpuserlogin\concern\LoginService;
 use cayu\tpuserlogin\exception\ValidateErrorException;
 use cayu\tpuserlogin\model\User;
 
@@ -36,8 +36,9 @@ abstract class Config
      * @author qjy 2022/5/28
      * @update qjy 2022/5/28
      */
-    public static function instance(){
-        if(!self::$_init){
+    public static function instance()
+    {
+        if (!self::$_init) {
             self::$_init = new static();
         }
         return self::$_init;
@@ -51,7 +52,7 @@ abstract class Config
      */
     protected function getConfig($name)
     {
-        return config("tplogin.meta.{$name}",'tplogin.meta.default');
+        return config("tplogin.meta.{$name}", 'tplogin.meta.default');
     }
     
     /**
@@ -62,7 +63,7 @@ abstract class Config
      */
     protected function getResponseConfig($code)
     {
-        if(isset($this->app['response_code']) && isset($this->app['response_code'][$code])){
+        if (isset($this->app['response_code']) && isset($this->app['response_code'][$code])) {
             return $this->app['response_code'][$code];
         }
         return config("tplogin.response_code.{$code}");
@@ -72,9 +73,10 @@ abstract class Config
      * @author qjy 2022/6/17
      * @update qjy 2022/6/17
      */
-    public function getCacheConfig(){
-        $cacheData = $this->app['cache']??null;
-        if(!isset($cacheData)){
+    public function getCacheConfig()
+    {
+        $cacheData = $this->app['cache'] ?? null;
+        if (!isset($cacheData)) {
             throw new ValidateErrorException($this->getResponseConfig('411'));
         }
         return $cacheData;
@@ -85,7 +87,8 @@ abstract class Config
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function app(string $name = 'default'){
+    public function app(string $name = 'default')
+    {
         $this->app = $this->getConfig($name);
         $this->filter = $this->app['filter_field'];
         return $this;
@@ -96,12 +99,12 @@ abstract class Config
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function model():User
+    public function model(): User
     {
-        if(empty($this->app['table']) || empty($this->app['connection'])){
+        if (empty($this->app['table']) || empty($this->app['connection'])) {
             throw new ValidateErrorException($this->getResponseConfig('410'));
         }
-        if($this->modelClass === null){
+        if ($this->modelClass === null) {
             $this->modelClass = new User();
         }
         return $this->modelClass;
@@ -114,21 +117,21 @@ abstract class Config
      */
     public function user($token = null)
     {
-        if($token !== null){
+        if ($token !== null) {
             $cacheData = $this->getCacheConfig();
             // 如果key不为空，则获取值
             $this->token = $token;
-            $tokenInfo = cache($cacheData['token_prefix'].$token);
-            if($tokenInfo){
+            $tokenInfo = cache($cacheData['token_prefix'] . $token);
+            if ($tokenInfo) {
                 $this->user = cache($tokenInfo['key']);
             }
         }
-        if($this->user === null){
+        if ($this->user === null) {
             throw new ValidateErrorException($this->getResponseConfig('430'));
         }
         // 过滤字段
         foreach ($this->filter as $value) {
-            if(isset($this->user[$value])){
+            if (isset($this->user[$value])) {
                 unset($this->user[$value]);
             }
         }
@@ -140,14 +143,18 @@ abstract class Config
      * @return mixed|object|\think\App
      * @author qjy 2022/6/23
      */
-    public function token($token = null,$filter = ['source_app_id']){
-        if($token !== null){
-            $cacheData = $this->getCacheConfig();
-            $this->tokenInfo = cache($cacheData['token_prefix'].$token);
+    public function token($token = null, $filter = ['source_app_id'])
+    {
+        if($token === null){
+            $token = $this->token;
         }
-        if($filter){
+        if ($token) {
+            $cacheData = $this->getCacheConfig();
+            $this->tokenInfo = cache($cacheData['token_prefix'] . $token);
+        }
+        if ($filter) {
             foreach ($filter as $value) {
-                if(isset($this->tokenInfo[$value])){
+                if (isset($this->tokenInfo[$value])) {
                     unset($this->tokenInfo[$value]);
                 }
             }

@@ -65,4 +65,5 @@ class User extends \think\Model
         return true;
     }
     
+    
 }

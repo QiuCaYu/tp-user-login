@@ -52,7 +52,7 @@ return [
         // 默认读取 default 内容,新增配置可复制 default内容,修改为其他名称即可使用
         'default' => [
             // 连接的数据库
-            'connection' => 'shopSys',
+            'connection' => '',
             // 数据表
             'table' => '',
             // 过滤表字段
@@ -64,11 +64,11 @@ return [
                 // 缓存时间
                 'times' => 86400,
                 // token缓存前缀定义
-                'token_prefix' => 'default_user_login:',
+                'token_prefix' => 'default_login:token:',
                 // 用户信息缓存前缀定义
-                'user_prefix' => 'default_user_login:user:',
+                'user_prefix' => 'default_login:user:',
             ]
-        ]
+        ],
         // ...
     ]
 ];

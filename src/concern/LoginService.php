@@ -13,6 +13,8 @@ use cayu\tpuserlogin\model\User;
  */
 class LoginService extends Config
 {
+    protected $setAuthStatus = false;
+    
     /**
      * 账号检查者
      * @param string $username
@@ -20,19 +22,35 @@ class LoginService extends Config
      * @author qjy 2022/6/23
      */
     public function checker(string $username,string $password){
-        if(empty($username) || empty($password)){
+        //
+        if(empty($username)){
             throw new ValidateErrorException($this->getResponseConfig('400'));
         }
         $userInfo = $this->model()->checkAccount($username);
-
         if ($userInfo === false) {
             throw new ValidateErrorException($this->getResponseConfig('420'));
         }
-        $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
-        if ($userPasswordStatus === false) {
-            throw new ValidateErrorException($this->getResponseConfig('421'));
+        // 如果不是其他验证形式，则进行密码验证
+        if($this->setAuthStatus === false){
+            if(empty($password)){
+                throw new ValidateErrorException($this->getResponseConfig('400'));
+            }
+            $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
+            if ($userPasswordStatus === false) {
+                throw new ValidateErrorException($this->getResponseConfig('421'));
+            }
         }
         return $userInfo;
+    }
+    
+    /**
+     * 设置验证方式:验证码、等方式
+     * @return $this
+     * @author qjy 2022/9/16
+     */
+    public function setAuthValidator(){
+        $this->setAuthStatus = true;
+        return $this;
     }
     
     /**
@@ -78,13 +96,13 @@ class LoginService extends Config
     public function cache(){
         $cacheData = $this->getCacheConfig();
         // 设置每个用户的存储token列表key
-        $tokenListKey = 'user_token_list:'.$this->user->username;
+        $tokenListKey = $cacheData['token_prefix'].'list:'.$this->user->account;
         $tokenList = cache($tokenListKey);
         if($tokenList === null){
             $tokenList = [];
         }
         // 缓存用户信息
-        $userKey = $cacheData['user_prefix'].$this->user->username;
+        $userKey = $cacheData['user_prefix'].$this->user->account;
         $userCacheStatus = cache($userKey,$this->user());
         if($userCacheStatus !== true){
             throw new ValidateErrorException($this->getResponseConfig('435'));
@@ -97,7 +115,7 @@ class LoginService extends Config
             'source_app_id' => $this->appId
         ];
         // token
-        $this->token = md5($this->user->username.microtime());
+        $this->token = md5($this->user->account.microtime());
         // 获取token数据
         $tokenStatus = cache($cacheData['token_prefix'].$this->token,$this->tokenInfo,$cacheData['times']);
         // 新增token到用户的tokenList
