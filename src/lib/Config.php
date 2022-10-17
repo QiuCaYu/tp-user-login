@@ -118,10 +118,11 @@ abstract class Config
     public function user($token = null)
     {
         if ($token !== null) {
+            $token = trim($token);
             $cacheData = $this->getCacheConfig();
             // 如果key不为空，则获取值
             $this->token = $token;
-            $tokenInfo = cache($cacheData['token_prefix'] . $token);
+            $tokenInfo = cache($cacheData['token_prefix'] . $this->token);
             if ($tokenInfo) {
                 $this->user = cache($tokenInfo['key']);
             }
@@ -149,6 +150,7 @@ abstract class Config
             $token = $this->token;
         }
         if ($token) {
+            $token = trim($token);
             $cacheData = $this->getCacheConfig();
             $this->tokenInfo = cache($cacheData['token_prefix'] . $token);
         }

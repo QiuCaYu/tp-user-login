@@ -1,5 +1,6 @@
 <?php
-declare (strict_types = 1);
+declare (strict_types=1);
+
 namespace cayu\tpuserlogin\concern;
 
 use cayu\tpuserlogin\exception\ValidateErrorException;
@@ -21,9 +22,10 @@ class LoginService extends Config
      * @param string $password
      * @author qjy 2022/6/23
      */
-    public function checker(string $username,string $password){
+    public function checker(string $username, string $password)
+    {
         //
-        if(empty($username)){
+        if (empty($username)) {
             throw new ValidateErrorException($this->getResponseConfig('400'));
         }
         $userInfo = $this->model()->checkAccount($username);
@@ -31,8 +33,8 @@ class LoginService extends Config
             throw new ValidateErrorException($this->getResponseConfig('420'));
         }
         // 如果不是其他验证形式，则进行密码验证
-        if($this->setAuthStatus === false){
-            if(empty($password)){
+        if ($this->setAuthStatus === false) {
+            if (empty($password)) {
                 throw new ValidateErrorException($this->getResponseConfig('400'));
             }
             $userPasswordStatus = $this->model()->checkAccountPassword([$username, $password]);
@@ -48,7 +50,8 @@ class LoginService extends Config
      * @return $this
      * @author qjy 2022/9/16
      */
-    public function setAuthValidator(){
+    public function setAuthValidator()
+    {
         $this->setAuthStatus = true;
         return $this;
     }
@@ -57,10 +60,10 @@ class LoginService extends Config
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function inspectUser(string $username,string $password,string $appId = '')
+    public function inspectUser(string $username, string $password, string $appId = '')
     {
         $this->appId = $appId;
-        $this->user = $this->checker($username,$password);
+        $this->user = $this->checker($username, $password);
         $this->cache();
         return $this;
     }
@@ -73,19 +76,20 @@ class LoginService extends Config
      * @return User
      * @author qjy 2022/6/29
      */
-    public function editPassword(string $username,string $password,string $newPassword){
-        $this->user = $this->checker($username,$password);
+    public function editPassword(string $username, string $password, string $newPassword)
+    {
+        $this->user = $this->checker($username, $password);
         // 生成新密码
-        $salt = (string)rand(0000,9999);
-        $newMdPasswrord = md5(md5($newPassword.$salt));
+        $salt = (string)rand(0000, 9999);
+        $newMdPasswrord = md5(md5($newPassword . $salt));
         // 密码更新
         $update = [
-            'salt' => $salt,
-            'password' => $newMdPasswrord,
+            'salt'        => $salt,
+            'password'    => $newMdPasswrord,
             'update_time' => date('Y-m-d H:i:s')
         ];
         $where = ['id' => $this->user->id];
-        return $this->model()::update($update,['id' => $where]);
+        return $this->model()::update($update, ['id' => $where]);
     }
     
     /**
@@ -93,43 +97,44 @@ class LoginService extends Config
      * @author qjy 2022/6/16
      * @update qjy 2022/6/16
      */
-    public function cache(){
+    public function cache()
+    {
         $cacheData = $this->getCacheConfig();
         // 设置每个用户的存储token列表key
-        $tokenListKey = $cacheData['token_prefix'].'list:'.$this->user->account;
+        $tokenListKey = $cacheData['token_prefix'] . 'list:' . $this->user->account;
         $tokenList = cache($tokenListKey);
-        if($tokenList === null){
+        if ($tokenList === null) {
             $tokenList = [];
         }
         // 缓存用户信息
-        $userKey = $cacheData['user_prefix'].$this->user->account;
-        $userCacheStatus = cache($userKey,$this->user());
-        if($userCacheStatus !== true){
+        $userKey = $cacheData['user_prefix'] . $this->user->account;
+        $userCacheStatus = cache($userKey, $this->user());
+        if ($userCacheStatus !== true) {
             throw new ValidateErrorException($this->getResponseConfig('435'));
         }
         // 生成token
-        $tokenExpiredTime = date('Y-m-d H:i:s',strtotime('+'.$cacheData['times'].'seconds'));
+        $tokenExpiredTime = date('Y-m-d H:i:s', strtotime('+' . $cacheData['times'] . 'seconds'));
         $this->tokenInfo = [
-            'key' =>$userKey,
+            'key'                => $userKey,
             'token_expired_time' => $tokenExpiredTime,
-            'source_app_id' => $this->appId
+            'source_app_id'      => $this->appId
         ];
         // token
-        $this->token = md5($this->user->account.microtime());
+        $this->token = md5($this->user->account . microtime());
         // 获取token数据
-        $tokenStatus = cache($cacheData['token_prefix'].$this->token,$this->tokenInfo,$cacheData['times']);
+        $tokenStatus = cache($cacheData['token_prefix'] . $this->token, $this->tokenInfo, $cacheData['times']);
         // 新增token到用户的tokenList
         $tokenList[] = $this->token;
-        if(count($tokenList) > 10){
+        if (count($tokenList) > 10) {
             foreach ($tokenList as $delKey => $delToken) {
-                if($delKey <= 9){
-                    cache($cacheData['token_prefix'].$delToken,null);
+                if ($delKey <= 9) {
+                    cache($cacheData['token_prefix'] . $delToken, null);
                     unset($tokenList[$delKey]);
                 }
             }
             $tokenList = array_values($tokenList);
         }
-        $tokenListStatus = cache($tokenListKey,$tokenList);
+        $tokenListStatus = cache($tokenListKey, $tokenList);
         return $tokenStatus && $tokenListStatus;
     }
     
@@ -139,21 +144,23 @@ class LoginService extends Config
      * @author qjy 2022/6/17
      * @update qjy 2022/6/17
      */
-    public function destroy($token = null){
+    public function destroy($token = null)
+    {
         $this->user = null;
-        if($token !== null){
+        if ($token !== null) {
             $this->token = $token;
         }
         $cacheData = $this->getCacheConfig();
-        $check = cache($cacheData['token_prefix'].$this->token,null);
-        if($check === true){
+        $check = cache($cacheData['token_prefix'] . $this->token, null);
+        if ($check === true) {
             return true;
         }
         return false;
     }
     
-    public function tokenKey(){
+    public function tokenKey()
+    {
         return $this->token;
     }
-
+    
 }
